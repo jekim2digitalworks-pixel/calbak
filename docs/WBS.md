@@ -61,7 +61,7 @@
 | P0-2 | 개발기획서 작성 | `docs/개발기획서.md` | ✅ |
 | P0-3 | WBS 작성(유의사항 포함) | `docs/WBS.md` | ✅ |
 | P0-4 | 프로젝트 골격(README/.gitignore/.env.example/스키마 초안) | 루트 파일들 | ✅ |
-| P0-5 | git 저장소 초기화 + 원격 연결 | 원격 연결 | ⏸ 보류(사용자: "나중에 연결") |
+| P0-5 | git 저장소 초기화 + GitHub 원격 연결 + 푸시 | jekim2digitalworks-pixel/calbak | ✅ main 푸시 완료(시크릿 제외 확인) |
 | P0-6 | Google Cloud OAuth 클라이언트 생성(Drive·Calendar 스코프, 동의화면) | client id/secret | ✅ |
 | P0-7 | Next.js 앱 부트스트랩(`web/`, Tailwind v4+Pretendard, 웜톤) | 실행/빌드 OK | ✅ |
 | P0-8 | Supabase 프로젝트 생성 + 스키마 마이그레이션 적용 + RLS 검증 | Supabase 반영 | ✅ |
