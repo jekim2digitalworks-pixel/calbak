@@ -1,0 +1,128 @@
+/* Pretendard (동적 서브셋) — 한국어 본문 가독성. 개발기획서 §2 / su_prompt 원칙 */
+@import "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "tailwindcss";
+
+/*
+  캘박 팔레트 — 웜화이트/크림 베이스 + 부드러운 그림자 + 저채도 액센트.
+  (다크/글래스모피즘 금지. 따뜻하고 아늑한 추억 앱. WBS §0.3)
+*/
+:root {
+  --background: #f4f6ee;   /* 세이지 크림 베이스 */
+  --surface: #ffffff;      /* 카드/표면 */
+  --foreground: #2a2c25;   /* 웜 그린 차콜 */
+  --muted: #868a7b;        /* 보조 텍스트 */
+  --border: #e5e8db;       /* 부드러운 경계 */
+  --accent: #5d8366;       /* 세이지 (주 액센트) */
+  --accent-soft: #dce7d4;  /* 액센트 연한 톤 */
+  --sunday: #cf5b46;       /* 일요일·공휴일 (웜 레드) */
+  --saturday: #5f7a93;     /* 토요일 (뮤트 블루) */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-sunday: var(--sunday);
+  --color-saturday: var(--saturday);
+  --font-sans: "Pretendard Variable", Pretendard, ui-sans-serif, system-ui,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* 크림 페이퍼 분위기: 미세한 웜 그라데이션 */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(120% 80% at 50% -10%, #fbfcf6 0%, transparent 55%),
+    radial-gradient(80% 60% at 100% 100%, #e9efe0 0%, transparent 60%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  /* 한국어 문장 가독성: 단어 단위 줄바꿈 */
+  word-break: keep-all;
+  line-height: 1.65;
+}
+
+/* ── 캘린더 모션 ───────────────────────────────────────── */
+@keyframes cal-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-cal-fade-up {
+  animation: cal-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-sheet-up {
+  animation: sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-modal-in {
+  animation: modal-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 모달 스크롤바 — 얇고 은은하게(둥근 모서리 침범 방지) */
+.modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cal-fade-up,
+  .animate-sheet-up,
+  .animate-modal-in,
+  .animate-fade-in {
+    animation: none;
+  }
+}

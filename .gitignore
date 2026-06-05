@@ -1,0 +1,30 @@
+# 환경 변수 / 시크릿
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+.turbo/
+
+# Vercel
+.vercel/
+
+# Supabase 로컬
+supabase/.branches/
+supabase/.temp/
+
+# 로그 / OS / 에디터
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
