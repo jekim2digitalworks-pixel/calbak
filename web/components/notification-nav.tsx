@@ -1,0 +1,83 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Bell } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+/**
+ * 하단탭 "알림" — 미읽음 배지. Supabase Realtime으로 실시간 갱신(B5 1b).
+ * Realtime 미설정 환경에서도 마운트/탭 이동 시 카운트는 갱신된다(graceful).
+ */
+export function NotificationNavItem() {
+  const pathname = usePathname();
+  const active = pathname.startsWith("/notifications");
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    async function init() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const refresh = async () => {
+        const { count } = await supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .is("read_at", null);
+        if (!cancelled) setCount(count ?? 0);
+      };
+      await refresh();
+
+      channel = supabase
+        .channel("notif-badge")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          refresh,
+        )
+        .subscribe();
+    }
+    init();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [pathname]);
+
+  return (
+    <Link
+      href="/notifications"
+      className={
+        "flex flex-col items-center gap-1 rounded-2xl py-1.5 text-[11px] font-medium transition-colors " +
+        (active ? "text-accent" : "text-muted hover:text-foreground")
+      }
+    >
+      <span className="relative">
+        <Bell
+          size={22}
+          strokeWidth={active ? 2.4 : 1.9}
+          fill={active ? "currentColor" : "none"}
+        />
+        {count > 0 && (
+          <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-sunday px-1 text-[9px] font-bold leading-none text-white">
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </span>
+      알림
+    </Link>
+  );
+}

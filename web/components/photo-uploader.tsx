@@ -27,9 +27,7 @@ export function PhotoUploader({ memoryId }: { memoryId: string }) {
       if (!res.ok || !json.ok) {
         throw new Error(json.message || `업로드 실패 (${res.status})`);
       }
-      if (json.synced === 0) {
-        setMsg("구글 드라이브 연동이 필요해 저장되지 않았어요.");
-      }
+      // 팬아웃은 백그라운드(A1). 내 드라이브 복사본이 준비되면 사진이 뜬다(PhotoImg가 재시도).
       router.refresh();
     } catch (err) {
       setMsg((err as Error).message);

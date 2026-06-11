@@ -36,7 +36,7 @@ export default async function OnboardingPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/landing");
 
   const admin = createSupabaseAdminClient();
   const { data: conn } = await admin

@@ -6,10 +6,12 @@ import { getMemory } from "@/lib/memories";
 import { listMemoryPhotos } from "@/lib/photos";
 import { listComments } from "@/lib/comments";
 import { listParticipants } from "@/lib/participants";
+import { listFriends } from "@/lib/friends";
 import { ensureWeatherSnapshot, weatherEmoji } from "@/lib/weather";
 import { deleteMemoryAction } from "@/app/actions/memories";
 import { addCommentAction } from "@/app/actions/comments";
 import { removeParticipantAction } from "@/app/actions/participants";
+import { inviteFriendsToMemoryAction } from "@/app/actions/friends";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { PhotoImg } from "@/components/photo-img";
 import { ShareInvite } from "@/components/share-invite";
@@ -36,21 +38,26 @@ export default async function MemoryDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/landing");
 
   const memory = await getMemory(id);
   if (!memory) notFound();
 
-  const [photos, comments, weather, participants] = await Promise.all([
+  const [photos, comments, weather, participants, friends] = await Promise.all([
     listMemoryPhotos(id),
     listComments(id),
     ensureWeatherSnapshot(memory),
     listParticipants(id),
+    listFriends(),
   ]);
 
   const isHost = participants.some(
     (p) => p.user_id === user.id && p.role === "host",
   );
+
+  // 아직 참가자가 아닌 친구만 원탭 초대 대상
+  const participantIds = new Set(participants.map((p) => p.user_id));
+  const invitableFriends = friends.filter((f) => !participantIds.has(f.user_id));
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 py-7">
@@ -70,7 +77,8 @@ export default async function MemoryDetailPage({
         {weather && (
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft/40 px-3 py-1.5 text-sm font-medium text-foreground/80">
             <span className="text-base">{weatherEmoji(weather.condition)}</span>
-            이날 {weather.temp}° {weather.condition}
+            {weather.is_approx ? "대략 " : "이날 "}
+            {weather.temp}° {weather.condition}
           </span>
         )}
       </div>
@@ -109,7 +117,45 @@ export default async function MemoryDetailPage({
           ))}
         </ul>
 
-        {/* 초대(호스트만) */}
+        {/* 친구 원탭 초대(호스트만) */}
+        {isHost && invitableFriends.length > 0 && (
+          <form
+            action={inviteFriendsToMemoryAction}
+            className="mt-3 rounded-2xl border border-border bg-surface p-3"
+          >
+            <input type="hidden" name="memoryId" value={memory.id} />
+            <p className="mb-2 px-1 text-xs text-muted">
+              친구를 골라 바로 초대하세요
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {invitableFriends.map((f) => (
+                <label
+                  key={f.user_id}
+                  className="cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    name="friendId"
+                    value={f.user_id}
+                    className="peer sr-only"
+                  />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors peer-checked:border-accent peer-checked:bg-accent peer-checked:text-white">
+                    <Avatar name={f.nickname} src={f.avatar_url} size={22} />
+                    {f.nickname}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <button
+              type="submit"
+              className="mt-3 h-10 w-full rounded-xl bg-accent text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5"
+            >
+              선택한 친구 초대
+            </button>
+          </form>
+        )}
+
+        {/* 초대 링크(호스트만) — 친구가 아닌 사람에게 */}
         {isHost && (
           <div className="mt-3">
             <ShareInvite memoryId={memory.id} title={memory.title} />

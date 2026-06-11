@@ -8,8 +8,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
  * 그날 실제 날씨를 1회 조회해 불변 스냅샷으로 저장.
  */
 
-const SEOUL = { lat: 37.5665, lng: 126.978 };
-
 // WMO weather code → 한국어
 const WMO: Record<number, string> = {
   0: "맑음", 1: "대체로 맑음", 2: "부분 흐림", 3: "흐림",
@@ -92,11 +90,19 @@ async function fetchDay(
   }
 }
 
-export type WeatherSnapshot = { temp: number; condition: string };
+export type WeatherSnapshot = {
+  temp: number;
+  condition: string;
+  is_approx: boolean;
+};
 
 /**
  * 모임 날씨 스냅샷 보장(멱등). 미래 날짜면 null. 이미 있으면 그대로 반환.
- * 데이터가 아직 없으면(아카이브 지연 등) null → 다음 조회 때 재시도.
+ * A2(개선안): 좌표를 못 구하면 **거짓 박제 대신 보류**한다(null → 다음 조회 때 재시도).
+ *  - place_lat/lng 있음 → 정상 박제
+ *  - place는 있으나 지오코딩 실패 → 보류(null, 미저장)
+ *  - place 자체가 없음 → 보류(null, 미저장). 날씨는 장소가 있어야 의미.
+ * is_approx 는 추후 광역 지오코딩 등 "대략" 표기에 사용(현재는 false로만 저장).
  */
 export async function ensureWeatherSnapshot(memory: {
   id: string;
@@ -110,24 +116,24 @@ export async function ensureWeatherSnapshot(memory: {
   const admin = createSupabaseAdminClient();
   const { data: existing } = await admin
     .from("weather_snapshots")
-    .select("temp, condition")
+    .select("temp, condition, is_approx")
     .eq("memory_id", memory.id)
     .maybeSingle();
   if (existing)
-    return { temp: existing.temp as number, condition: existing.condition as string };
+    return {
+      temp: existing.temp as number,
+      condition: existing.condition as string,
+      is_approx: (existing.is_approx as boolean | null) ?? false,
+    };
 
   let lat = memory.place_lat;
   let lng = memory.place_lng;
-  if ((lat == null || lng == null) && memory.place) {
-    const g = await geocode(memory.place);
-    if (g) {
-      lat = g.lat;
-      lng = g.lng;
-    }
-  }
   if (lat == null || lng == null) {
-    lat = SEOUL.lat;
-    lng = SEOUL.lng;
+    if (!memory.place) return null; // 장소 없음 → 보류(서울 거짓 박제 안 함)
+    const g = await geocode(memory.place);
+    if (!g) return null; // 지오코딩 실패 → 보류(다음에 재시도)
+    lat = g.lat;
+    lng = g.lng;
   }
 
   const w = await fetchDay(lat, lng, memory.date);
@@ -138,6 +144,7 @@ export async function ensureWeatherSnapshot(memory: {
     temp: w.temp,
     condition: w.condition,
     source: "open-meteo",
+    is_approx: false,
   });
-  return w;
+  return { ...w, is_approx: false };
 }

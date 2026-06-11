@@ -40,7 +40,19 @@ export async function createMemory(input: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("unauthorized");
 
-  const { data, error } = await supabase
+  const admin = createSupabaseAdminClient();
+
+  // 본인 공간에만 생성 허용(0005에서 memories_select가 참가자-only가 되어
+  // RLS insert의 RETURNING이 막히므로, 생성은 admin으로 하고 소속을 명시 검증).
+  const { data: membership } = await admin
+    .from("space_members")
+    .select("user_id")
+    .eq("space_id", input.spaceId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership) throw new Error("forbidden");
+
+  const { data, error } = await admin
     .from("memories")
     .insert({
       space_id: input.spaceId,
@@ -55,8 +67,7 @@ export async function createMemory(input: {
     .single();
   if (error) throw error;
 
-  // 생성자 = host 참가자 (RLS상 클라 insert 정책이 없으므로 admin)
-  const admin = createSupabaseAdminClient();
+  // 생성자 = host 참가자
   await admin
     .from("memory_participants")
     .upsert(

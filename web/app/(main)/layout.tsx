@@ -12,7 +12,7 @@ export default async function MainLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/landing");
 
   return (
     // 모바일은 화면 꽉 차게(풀폭), 데스크톱(≥640px)에선 가운데 좁은 앱 프레임(인스타 웹처럼)

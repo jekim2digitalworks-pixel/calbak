@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifyParticipants } from "@/lib/notifications";
 
 export type Author = { nickname: string; avatar_url: string | null } | null;
 export type Comment = {
@@ -59,4 +60,11 @@ export async function addComment(
     content,
   });
   if (error) throw error;
+
+  // 새 댓글 알림(행위자 제외). 실패는 무시.
+  try {
+    await notifyParticipants(memoryId, user.id, "comment", content.slice(0, 60));
+  } catch {
+    /* 무시 */
+  }
 }

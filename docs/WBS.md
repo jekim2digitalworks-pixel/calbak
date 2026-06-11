@@ -88,6 +88,7 @@
 | P3-2 | 박제 날짜 점 표시 + 날짜 탭 → 바텀시트(그날 모임 + 박제 폼) | P3-1 | 🟡 코드 완성 |
 | P3-2b | **대한민국 공휴일/연휴**(한국천문연구원 공식 데이터, 음력·대체공휴일 정확) + 일=빨강/토=파랑 | P3-1 | 🟡 코드 완성 |
 | P3-3 | **인스타식 피드 홈**(카드: 아바타·사진·제목·장소·댓글수) + 하단탭(피드/캘린더/공간) | P3-1 | 🟡 코드 완성 |
+| P3-4 | **1년 전 오늘 회고 배너**(같은 월·일 과거 박제, 캘린더 상단) `[개선]` | P3-1 | 🟡 코드 완성, 마이그레이션 무관 |
 
 ### Phase 4 — 모임 상세 (사진·댓글)
 | ID | 작업 | 의존 | 상태 |
@@ -97,13 +98,15 @@
 | P4-3 | 사진 표시(서버 프록시 `/api/photos/[id]`, 본인 복사본) | P4-2 | 🟡 경로 검증 완료, 브라우저 표시 재확인(타이밍 404→재로드) |
 | P4-4 | 신규 멤버 백필 복제(기존 멤버 복사본에서 다운로드→새 멤버 Drive 업로드) | P4-2 | 🟡 코드 완성(초대 수락 시 트리거) |
 | P4-5 | 비동기 댓글 CRUD(작성·목록, 작성자 닉네임) | P4-1 | 🟡 코드 완성 |
+| P4-6 | **팬아웃 비동기화 + Storage 스테이징 안전망 + 재시도 cron** `[개선/A1]` | P4-2 | 🟡 코드 완성, 0003+버킷 필요 |
 
 ### Phase 5 — 날씨 박제
 | ID | 작업 | 의존 | 상태 |
 |---|---|---|---|
 | P5-0 | Open-Meteo 응답 검증 | — | 🟡 샌드박스 egress 차단으로 미검증, 표준 응답형식 기준 구현(사용자/프로드 확인) |
 | P5-1 | 날짜 경과 후 날씨 조회 → 불변 스냅샷 박제(온디맨드, 상세 진입 시) | P2-2 | 🟡 코드 완성. Forecast(≤90일)/Archive 분기 + 장소 지오코딩→좌표, 실패 시 서울 |
-| P5-2 | Vercel Cron 일 1회 박제 배치(`/api/cron/weather` + `vercel.json` 필요) | P5-1 | 🟡 라우트 완성, 배포 시 vercel.json+CRON_SECRET |
+| P5-2 | Vercel Cron 일 1회 박제 배치(`/api/cron/weather` + `vercel.json` 필요) | P5-1 | ✅ 라우트+`vercel.json` cron(`0 21 * * *`=06:00 KST) 등록. 배포 시 env에 `CRON_SECRET`만 추가 |
+| P5-3 | **날씨 좌표 폴백 정직화**(좌표 없음/지오코딩 실패 시 서울 거짓박제 대신 보류, `is_approx`) `[개선/A2]` | P5-1 | 🟡 코드 완성, 0003 필요 |
 
 ### Phase 6 — 친구 초대
 | ID | 작업 | 의존 | 상태 |
@@ -121,8 +124,23 @@
 ### Phase 8 — 랜딩 & 마감
 | ID | 작업 | 의존 | 상태 |
 |---|---|---|---|
-| P8-1 | 랜딩페이지(supanova 풀 적용, 별도 톤) | — | ⬜ |
+| P8-1 | 랜딩페이지(supanova 풀 적용, 별도 톤) | — | ✅ `/landing` 신설(다크/글래스 풀 적용). 빌드 정적 프리렌더 확인. 기존 라우팅·globals.css 기존 규칙 무수정(새 `.calbak-landing` 스코프 규칙만 추가) |
 | P8-2 | 실사용 검증(친구 5명 1주일) | M1 전체 | ⬜ |
+
+### Phase 9 — 인앱 알림 (`[개선/B5]`)
+| ID | 작업 | 의존 | 상태 |
+|---|---|---|---|
+| P9-1 | 댓글/사진 → 참가자 인앱 알림(`notifications`) + 하단탭 종 배지 + 알림 목록 화면 | P4-5, P4-6 | 🟡 코드 완성, 0003 필요 |
+| P9-2 | Supabase Realtime 배지 실시간 갱신 | P9-1 | 🟡 코드 완성(테이블 Realtime 활성화 필요, 미설정 시 graceful) |
+| P9-3 | 이메일 다이제스트(하루 1회) | P9-1 | ⏸ 보류(도메인/Resend 승인 필요) |
+
+### Phase 10 — 친구 & 1:1 DM (`[방향확장/D11]`)
+| ID | 작업 | 의존 | 상태 |
+|---|---|---|---|
+| P10-1 | 친구 시스템: 개인 코드/링크/**QR**(연락처 불필요) + 수락(`/add/[code]`) + 친구목록(`/friends`) | P1 | 🟡 코드 완성, 0004 필요 |
+| P10-2 | 친구목록 **원탭 모임 초대**(모임 상세, 호스트) — 참가자 추가+사진 백필+GCal+초대 알림 | P10-1, P6 | 🟡 코드 완성 |
+| P10-3 | **1:1 실시간 DM**(Supabase Realtime, `/dm/[friendId]`) + 하단탭 안읽음 배지 | P10-1 | 🟡 코드 완성, 0004+Realtime 활성화 필요 |
+| P10-4 | 친구 그룹방 / 모임별 채팅 | P10-3 | ⏸ 후속 |
 
 ### 보류 (v1.1 / v2)
 | ID | 작업 | 상태 |
@@ -143,11 +161,16 @@
 | **완료(검증됨)** | P0 전체, P1 전체, **P2(모임 생성·조회)**, **P3(캘린더·공휴일·셀표시)**, **P4-2/4-3(사진 복제·표시)**, **P5(날씨 칩)**, 장소 자동완성(카카오) |
 | **코드완성·실테스트 대기** | P4-4·P6(2계정 초대 풀테스트), P5-2(cron, 배포 시) |
 | **보류** | P0-5(git 원격 — 나중에) |
-| **추가 완료** | **Phase 7 구글 캘린더 푸시(M1.5)** — Calendar API 쓰기 검증 완료 |
-| **다음 후보** | (B) **배포(Vercel)+git**→P8-2 실사용 검증(MVP 목표) · (C) **P8-1 랜딩페이지** · (D) 통합 실테스트/버그 다듬기 |
+| **추가 완료** | **Phase 7 구글 캘린더 푸시(M1.5)** — Calendar API 쓰기 검증 완료 · **P8-1 랜딩페이지(`/landing`)** 빌드 정적 생성 확인 · **P5-2 cron** `vercel.json` 등록 |
+| **다음 후보** | (B) **배포(Vercel)+git**→P8-2 실사용 검증(MVP 목표) · (D) 통합 실테스트/버그 다듬기 · 랜딩 브라우저 시각 확인 |
 | **블로커/확인 필요** | 초대 풀테스트는 2번째 구글 계정(시크릿창)+포트면 Supabase Redirect URLs 추가. 배포·git은 사용자 계정/로그인 필요. |
 
 > 갱신 이력
+> - 2026-06-11: **'공간' 탭 프로필 편집 추가**(사용자 요청). 프로필 이미지 업로드(Supabase Storage `avatars` public 버킷, 첫 업로드 시 자동 생성) + 닉네임/이름/전화번호/이메일 수정. 마이그레이션 **`0006_profile_fields.sql`**(profiles에 name/phone/email 추가; nickname·avatar_url은 기존). `lib/profile.ts`(getMyProfile 폴백=구글메타/로그인이메일, updateMyProfile RLS 본인만), `actions/profile.ts`, `/api/profile/avatar`(admin 업로드→public URL→avatar_url), `components/profile-editor.tsx`(client). 공간 페이지를 정적 헤더→편집 폼으로 교체(연동/로그아웃 유지). 이메일은 '연락용'(로그인 구글 이메일과 별개). `next build`+TS 통과, 신규 파일 ESLint 0건. 미커밋.
+> - 2026-06-11: **캘린더 프라이빗 엄격화**(사용자 요청 "참가자만 + 작성자 본인"). 마이그레이션 **`0005_calendar_privacy.sql`** — `memories_select`에서 `or is_space_member(space_id)` 제거 → **참가자(is_memory_participant)만** 열람. 다중공간 확장 시에도 초대 안 받은 공간 멤버 노출 차단. 생성 직후 본인 RETURNING 읽기가 막히지 않도록 `createMemory`를 service role insert + 공간소속 명시검증으로 보강. 현 단일공간에서도 동작 동일(작성자=host 참가자). `next build` 통과.
+> - 2026-06-11: **방향 확장(D11) — 친구 시스템 + 1:1 실시간 DM 구현**(Phase 10). 원 기획서의 "박물관·채팅은 카톡" 포지셔닝을 사용자 결정으로 **"친구 소통 + 프라이빗 캘린더"** 로 갱신. **P10-1** 친구추가=개인 코드/링크/**QR**(연락처 불필요, `qrcode` 서버생성), 수락 `/add/[code]`, 친구목록 `/friends`(`lib/friends.ts`+`friendships` 정규화쌍). **P10-2** 모임 상세에서 **친구 원탭 초대**(체크박스→`inviteFriendsToMemoryAction`: 참가자추가+백필+GCal+`invite` 알림). **P10-3** 1:1 실시간 DM(`lib/dm.ts`, `dm_threads`/`dm_messages`+RLS, `/dm/[friendId]`, `chat-room.tsx` Supabase Realtime 구독, 안읽음 read_at). 하단탭 4개로 재편(캘린더·**친구**(DM배지)·알림·공간). 신규 마이그레이션 **`0004_friends_dm.sql`**. `next build`+TS 통과, 신규 파일 ESLint 0건. **적용 전제**: ①0004 실행 ②`dm_messages` Realtime 활성화(publication 추가는 0004에 포함, Dashboard Replication 확인) ③`APP_BASE_URL` env(친구 링크/QR 절대경로). 미커밋.
+> - 2026-06-11: **개선 4건 구현**(설계=`개선제안_구현안_v1.md`). **A2/P5-3** 날씨 좌표 폴백 정직화(`weather.ts`: 좌표 없음·지오코딩 실패 시 서울 거짓박제 대신 보류, `is_approx` 컬럼). **B4/P3-4** "1년 전 오늘" 회고 배너(`lib/on-this-day.ts`+`components/on-this-day.tsx`, 캘린더 상단). **A1/P4-6** 사진 팬아웃 비동기화(`createPhotoRecord`+`after(runFanout)`)+Supabase Storage `photo-staging` 원본 안전망+에러분류(quota/auth/other)+재시도 cron(`/api/cron/photo-fanout`, `vercel.json` 일1회). **B5/P9** 인앱 알림(`notifications` 테이블, 댓글/사진 훅, 하단탭 종 배지+`/notifications`, Realtime 실시간 갱신). 신규 마이그레이션 **`0003_improvements.sql`**(A1 컬럼·A2 is_approx·B5 테이블+RLS). `next build`+TypeScript 통과, 신규/수정 파일 ESLint 0건. **적용 전제**: ①Supabase에 0003 실행 ②`photo-staging` 버킷(첫 업로드 시 자동 생성, 비공개) ③`notifications` 테이블 Realtime 활성화(배지 실시간용, 미설정 시 마운트/이동 시 갱신). 미커밋(사용자 요청).
+> - 2026-06-10: **P5-2 cron 등록** — `web/vercel.json`에 `crons`(`/api/cron/weather`, `0 21 * * *`=06:00 KST 매일) 추가. 배포 시 env `CRON_SECRET`만 더하면 동작. **P8-1 랜딩페이지 완성** — `/landing` 신설(supanova 풀 적용: 다크 웜그린 베이스+글래스모피즘+더블베젤 카드+스프링 호버+CSS 리빌 모션). 히어로/컨셉(강 vs 박물관)/기능6/동작3단계/프라이버시/CTA/푸터. **기존 코드·스타일 무수정** 원칙 준수 — globals.css는 기존 규칙 그대로 두고 `.calbak-landing` 스코프 신규 규칙만 append, 라우팅 무변경(/ → /calendar 유지). 빌드 통과 + `/landing` 정적 프리렌더 확인.
 > - 2026-06-04: 문서 생성. 스택을 Vercel+Supabase로 확정, 사진=멤버별 Drive 복제, 구글 캘린더 푸시 추가, 일기 v1.1 연기 반영.
 > - 2026-06-04: Next.js 16.2.7 앱 `web/` 부트스트랩(App Router·TS·Tailwind v4·Pretendard·웜톤). 빌드 검증 통과. git은 사용자 요청으로 보류.
 > - 2026-06-04: Supabase 키 검증(URL/anon/secret OK) → 스키마 적용(11테이블, P0-8) → Supabase 클라이언트 배선(browser/server/admin)+세션 `proxy.ts`+`/api/health`(P0-9). 헬스 200 `{ok,db:connected,spacesCount:0}` 확인. **M0 완료.**

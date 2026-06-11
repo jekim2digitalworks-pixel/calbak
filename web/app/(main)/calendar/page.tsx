@@ -1,8 +1,10 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDefaultSpace, getMyDefaultSpace } from "@/lib/spaces";
 import { listMyFeed } from "@/lib/feed";
+import { listOnThisDay } from "@/lib/on-this-day";
 import { getHolidayMap } from "@/lib/holidays";
 import { MonthCalendar } from "@/components/month-calendar";
+import { OnThisDay } from "@/components/on-this-day";
 
 function kstToday(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -20,14 +22,17 @@ export default async function CalendarPage() {
   if (user) await ensureDefaultSpace(user.id, nickname); // 생성용 공간 보장
 
   const space = await getMyDefaultSpace();
-  const items = await listMyFeed();
+  const [items, onThisDay] = await Promise.all([listMyFeed(), listOnThisDay()]);
 
   return (
-    <MonthCalendar
-      spaceName={space?.name ?? "내 캘박"}
-      holidays={getHolidayMap()}
-      items={items}
-      todayStr={kstToday()}
-    />
+    <div className="flex flex-1 flex-col">
+      <OnThisDay items={onThisDay} />
+      <MonthCalendar
+        spaceName={space?.name ?? "내 캘박"}
+        holidays={getHolidayMap()}
+        items={items}
+        todayStr={kstToday()}
+      />
+    </div>
   );
 }

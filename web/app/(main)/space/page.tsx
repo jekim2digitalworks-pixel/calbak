@@ -1,7 +1,8 @@
 import { HardDriveUpload, CalendarCheck } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { Avatar } from "@/components/avatar";
+import { getMyProfile } from "@/lib/profile";
+import { ProfileEditor } from "@/components/profile-editor";
 
 function StatusPill({ ok }: { ok: boolean }) {
   return (
@@ -22,10 +23,6 @@ export default async function SpacePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const meta = user?.user_metadata ?? {};
-  const nickname = meta.full_name ?? meta.name ?? user?.email ?? "친구";
-  const avatar = meta.avatar_url ?? meta.picture ?? null;
-
   const admin = createSupabaseAdminClient();
   const { data: conn } = user
     ? await admin
@@ -35,20 +32,13 @@ export default async function SpacePage() {
         .maybeSingle()
     : { data: null };
 
+  const profile = await getMyProfile();
+
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6">
-      <header className="mb-6 flex items-center gap-4">
-        <Avatar name={nickname} src={avatar} size={56} />
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">{nickname}</h1>
-          <p className="text-sm text-muted">{user?.email}</p>
-        </div>
-      </header>
+      <h1 className="mb-5 text-2xl font-bold tracking-tight">내 프로필</h1>
 
-      <p className="mb-3 rounded-2xl bg-accent-soft/25 px-4 py-3 text-sm leading-relaxed text-foreground/70">
-        초대는 각 <b>일정 상세 화면</b>에서 만들어요. 일정마다 함께할 친구를 따로
-        초대하고, 참가자를 관리할 수 있어요.
-      </p>
+      {profile && <ProfileEditor initial={profile} />}
 
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-semibold text-muted">내 연동</h2>
